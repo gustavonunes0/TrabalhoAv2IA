@@ -3,116 +3,116 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-quantidade_individuos = 50
-quantidade_maxima_geracoes = 100
-valor_otimo = 10
-numero_elites = 5
-numero_execucoes = 100
+population_size = 50
+max_generations = 100
+optimal_value = 10
+num_elites = 5
+num_executions = 100
 
-def ler_pontos_do_arquivo(caminho_do_arquivo):
-    dataframe = pd.read_csv(caminho_do_arquivo, header=None)
+def read_points_from_file(file_path):
+    dataframe = pd.read_csv(file_path, header=None)
     return dataframe.values
 
-def criar_populacao(tamanho, numero_de_pontos):
-    return [np.random.permutation(numero_de_pontos) for _ in range(tamanho)]
+def create_population(size, num_points):
+    return [np.random.permutation(num_points) for _ in range(size)]
 
-def calcular_aptidao(cromossomo, pontos):
-    soma_das_distancias = 0
-    for indice in range(len(cromossomo)):
-        ponto_atual = pontos[cromossomo[indice]]
-        ponto_proximo = pontos[cromossomo[(indice + 1) % len(cromossomo)]]
-        distancia = np.linalg.norm(ponto_atual - ponto_proximo)
-        soma_das_distancias += distancia
-    return soma_das_distancias
+def calculate_fitness(chromosome, points):
+    total_distance = 0
+    for index in range(len(chromosome)):
+        current_point = points[chromosome[index]]
+        next_point = points[chromosome[(index + 1) % len(chromosome)]]
+        distance = np.linalg.norm(current_point - next_point)
+        total_distance += distance
+    return total_distance
 
-def selecao_por_torneio(populacao, aptidoes, tamanho_torneio=3):
-    selecionados = []
-    while len(selecionados) < len(populacao):
-        competidores = np.random.choice(len(populacao), tamanho_torneio, replace=False)
-        vencedor = competidores[np.argmin(aptidoes[competidores])]
-        selecionados.append(populacao[vencedor])
-    return selecionados
+def tournament_selection(population, fitnesses, tournament_size=3):
+    selected = []
+    while len(selected) < len(population):
+        competitors = np.random.choice(len(population), tournament_size, replace=False)
+        winner = competitors[np.argmin(fitnesses[competitors])]
+        selected.append(population[winner])
+    return selected
 
-def crossover_de_dois_pontos(pai1, pai2):
-    tamanho = len(pai1)
-    filho1, filho2 = pai1.copy(), pai2.copy()
-    ponto1, ponto2 = sorted(np.random.choice(range(1, tamanho-1), 2, replace=False))
-    filho1[ponto1:ponto2], filho2[ponto1:ponto2] = pai2[ponto1:ponto2], pai1[ponto1:ponto2]
-    return filho1, filho2
+def two_point_crossover(parent1, parent2):
+    size = len(parent1)
+    child1, child2 = parent1.copy(), parent2.copy()
+    point1, point2 = sorted(np.random.choice(range(1, size - 1), 2, replace=False))
+    child1[point1:point2], child2[point1:point2] = parent2[point1:point2], parent1[point1:point2]
+    return child1, child2
 
-def mutacao_por_troca(cromossomo, taxa_de_mutacao=0.05):
-    cromossomo = np.array(cromossomo)
-    for indice in range(len(cromossomo)):
-        if np.random.rand() < taxa_de_mutacao:
-            j = np.random.randint(len(cromossomo))
-            cromossomo[indice], cromossomo[j] = cromossomo[j], cromossomo[indice]
-    return cromossomo.tolist()
+def swap_mutation(chromosome, mutation_rate=0.05):
+    chromosome = np.array(chromosome)
+    for index in range(len(chromosome)):
+        if np.random.rand() < mutation_rate:
+            j = np.random.randint(len(chromosome))
+            chromosome[index], chromosome[j] = chromosome[j], chromosome[index]
+    return chromosome.tolist()
 
-def aplicar_elitismo(populacao, aptidoes, numero_de_elites):
-    indices_das_elites = np.argsort(aptidoes)[:numero_de_elites]
-    return [populacao[indice] for indice in indices_das_elites]
+def apply_elitism(population, fitnesses, num_elites):
+    elite_indices = np.argsort(fitnesses)[:num_elites]
+    return [population[index] for index in elite_indices]
 
-def plotar_tsp_3d(pontos, cromossomo):
-    figura = plt.figure(figsize=(10, 8))
-    ax = figura.add_subplot(111, projection='3d')
-    coordenadas_x, coordenadas_y, coordenadas_z = pontos[:, 0], pontos[:, 1], pontos[:, 2]
-    ax.scatter(coordenadas_x, coordenadas_y, coordenadas_z, color='blue', s=100, zorder=5)
-    ax.scatter(coordenadas_x[0], coordenadas_y[0], coordenadas_z[0], color='red', s=200, zorder=5, label='Origem')
-    for indice in range(len(cromossomo) - 1):
-        posicao_inicial = pontos[cromossomo[indice]]
-        posicao_final = pontos[cromossomo[indice + 1]]
-        ax.plot([posicao_inicial[0], posicao_final[0]], [posicao_inicial[1], posicao_final[1]], [posicao_inicial[2], posicao_final[2]], 'k-', zorder=1)
-    ax.plot([pontos[cromossomo[-1]][0], pontos[0][0]], [pontos[cromossomo[-1]][1], pontos[0][1]], [pontos[cromossomo[-1]][2], pontos[0][2]], 'k-', zorder=1)
-    ax.set_xlabel('Coordenada X')
-    ax.set_ylabel('Coordenada Y')
-    ax.set_zlabel('Coordenada Z')
+def plot_tsp_3d(points, chromosome):
+    figure = plt.figure(figsize=(10, 8))
+    ax = figure.add_subplot(111, projection='3d')
+    x_coords, y_coords, z_coords = points[:, 0], points[:, 1], points[:, 2]
+    ax.scatter(x_coords, y_coords, z_coords, color='blue', s=100, zorder=5)
+    ax.scatter(x_coords[0], y_coords[0], z_coords[0], color='red', s=200, zorder=5, label='Origin')
+    for index in range(len(chromosome) - 1):
+        start_pos = points[chromosome[index]]
+        end_pos = points[chromosome[index + 1]]
+        ax.plot([start_pos[0], end_pos[0]], [start_pos[1], end_pos[1]], [start_pos[2], end_pos[2]], 'k-', zorder=1)
+    ax.plot([points[chromosome[-1]][0], points[0][0]], [points[chromosome[-1]][1], points[0][1]], [points[chromosome[-1]][2], points[0][2]], 'k-', zorder=1)
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+    ax.set_zlabel('Z Coordinate')
     ax.legend()
     ax.grid(True)
     plt.show()
 
-def executar_algoritmo_genetico(pontos):
-    populacao = criar_populacao(quantidade_individuos, len(pontos))
-    todas_as_aptidoes = []
-    melhor_solucao = np.inf
-    melhor_cromossomo = None
+def execute_genetic_algorithm(points):
+    population = create_population(population_size, len(points))
+    all_fitnesses = []
+    best_solution = np.inf
+    best_chromosome = None
 
-    for geracao in range(quantidade_maxima_geracoes):
-        aptidoes = np.array([calcular_aptidao(individuo, pontos) for individuo in populacao])
-        todas_as_aptidoes.extend(aptidoes)
-        if np.min(aptidoes) < melhor_solucao:
-            melhor_solucao = np.min(aptidoes)
-            melhor_cromossomo = populacao[np.argmin(aptidoes)]
-            print(f"Geracao {geracao}: Melhor aptidao = {melhor_solucao}")
+    for generation in range(max_generations):
+        fitnesses = np.array([calculate_fitness(individual, points) for individual in population])
+        all_fitnesses.extend(fitnesses)
+        if np.min(fitnesses) < best_solution:
+            best_solution = np.min(fitnesses)
+            best_chromosome = population[np.argmin(fitnesses)]
+            print(f"Generation {generation}: Best fitness = {best_solution}")
 
-        if melhor_solucao <= valor_otimo:
-            print("Condição de parada atingida.")
+        if best_solution <= optimal_value:
+            print("Stopping condition reached.")
             break
 
-        elites = aplicar_elitismo(populacao, aptidoes, numero_elites)
-        selecionados = selecao_por_torneio(populacao, aptidoes)
-        descendentes = [crossover_de_dois_pontos(selecionados[i], selecionados[(i + 1) % len(selecionados)]) for i in range(0, len(selecionados), 2)]
-        populacao = [mutacao_por_troca(filho) for par in descendentes for filho in par]
-        populacao.extend(elites)
+        elites = apply_elitism(population, fitnesses, num_elites)
+        selected = tournament_selection(population, fitnesses)
+        offspring = [two_point_crossover(selected[i], selected[(i + 1) % len(selected)]) for i in range(0, len(selected), 2)]
+        population = [swap_mutation(child) for pair in offspring for child in pair]
+        population.extend(elites)
 
-    if melhor_cromossomo is not None:
-        plotar_tsp_3d(pontos, melhor_cromossomo)
+    if best_chromosome is not None:
+        plot_tsp_3d(points, best_chromosome)
     else:
-        print("Nenhuma solução válida encontrada.")
+        print("No valid solution found.")
 
-    menor_aptidao = np.min(todas_as_aptidoes)
-    maior_aptidao = np.max(todas_as_aptidoes)
-    media_aptidao = np.mean(todas_as_aptidoes)
-    desvio_padrao_aptidao = np.std(todas_as_aptidoes)
+    min_fitness = np.min(all_fitnesses)
+    max_fitness = np.max(all_fitnesses)
+    mean_fitness = np.mean(all_fitnesses)
+    std_fitness = np.std(all_fitnesses)
 
-    print("Menor Valor de Aptidão:", menor_aptidao)
-    print("Maior Valor de Aptidão:", maior_aptidao)
-    print("Média de Valor de Aptidão:", media_aptidao)
-    print("Desvio-Padrão de Valor de Aptidão:", desvio_padrao_aptidao)
+    print("Menor valor de aptidão:", min_fitness)
+    print("Maior valor de aptidão:", max_fitness)
+    print("Valor médio de aptidão:", mean_fitness)
+    print("Desvio padrão de valor de aptidão:", std_fitness)
 
-    return melhor_solucao
+    return best_solution
 
-caminho_do_arquivo = 'C:\\Users\\av80076\\Documents\\IA\\CaixeiroSimples.csv'
-pontos = ler_pontos_do_arquivo(caminho_do_arquivo)
+file_path = 'C:\\Users\\av80076\\Documents\\IA\\CaixeiroSimples.csv'
+points = read_points_from_file(file_path)
 
-melhor_aptidao = executar_algoritmo_genetico(pontos)
-print("Melhor aptidão encontrada:", melhor_aptidao)
+best_fitness = execute_genetic_algorithm(points)
+print("Best fitness found:", best_fitness)
